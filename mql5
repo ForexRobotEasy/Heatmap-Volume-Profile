@@ -1,0 +1,76 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                  Heatmap Volume Profile |
+//|                                      Developer: Forex Robot Easy Team|
+//|                                                Website: forexroboteasy.com |
+//+------------------------------------------------------------------+
+
+#property strict
+
+// Global variables
+int heatmapCount = 10; // Number of heatmaps to display
+double heatmapRange = 100.0; // Range of each heatmap in pips
+
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Calculate heatmap levels
+   double heatmapStep = heatmapRange / heatmapCount;
+   double[] heatmapLevels;
+   ArrayResize(heatmapLevels, heatmapCount);
+   
+   for (int i = 0; i < heatmapCount; i++)
+   {
+      heatmapLevels[i] = NormalizeDouble(Ask - (heatmapStep * i), Digits);
+   }
+   
+   // Set indicator buffers
+   SetIndexBuffer(0, heatmapLevels);
+   SetIndexStyle(0, DRAW_COLOR_LINE, STYLE_SOLID, 1);
+   SetIndexDrawBegin(0, Bars - heatmapCount);
+   
+   // Set indicator label
+   ObjectCreate(0, 'HeatmapVolumeProfile', OBJ_LABEL, 0, 0, 0, 0, 0);
+   ObjectSetText(0, 'Heatmap Volume Profile', 9, 'Arial', clrWhite);
+   ObjectSet('HeatmapVolumeProfile', OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSet('HeatmapVolumeProfile', OBJPROP_XDISTANCE, 10);
+   ObjectSet('HeatmapVolumeProfile', OBJPROP_YDISTANCE, 20);
+   ObjectSet('HeatmapVolumeProfile', OBJPROP_BACK, true);
+   
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+{
+   // Calculate volume profile
+   double[] volumeProfile;
+   ArrayResize(volumeProfile, heatmapCount);
+   
+   for (int i = prev_calculated; i < rates_total; i++)
+   {
+      int heatmapIndex = (int)((Ask - low[i]) / heatmapRange * heatmapCount);
+      volumeProfile[heatmapIndex] += volume[i];
+   }
+   
+   // Set indicator values
+   for (int i = 0; i < heatmapCount; i++)
+   {
+      IndicatorBuffer[0][i] = volumeProfile[i];
+   }
+   
+   return(rates_total);
+}
